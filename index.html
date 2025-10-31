@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LF Digital — Tienda Online</title>
+  <meta name="description" content="LF Digital: tecnología al mejor precio. Pagá con Mercado Pago o transferencia. Consultá por stock o productos a pedido." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root{--brand:#111827}
+    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,"Apple Color Emoji","Segoe UI Emoji"}
+    .glass{backdrop-filter:saturate(180%) blur(10px); background:rgba(255,255,255,.7)}
+    .shadow-soft{box-shadow:0 10px 30px rgba(0,0,0,.06)}
+    .card:hover{transform:translateY(-2px); box-shadow:0 12px 32px rgba(0,0,0,.10)}
+    .btn{transition:transform .05s ease}
+    .btn:active{transform:translateY(1px)}
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+<script>
+  const CONFIG = {
+    STORE_NAME: 'LF Digital',
+    WHATSAPP_NUMBER: '+541128875114',
+    BANK_DETAILS: 'Alias: lucasgmiele | CVU: 0000003100072050869315',
+    ML_SELLER_ID: '583745753',
+    EXTRA_ML_ITEMS: ['MLA2498596722','MLA45258398','MLA45258326','MLA45258330'],
+    USE_PROXY: true,
+    CARD_FEE_PERCENT: 0.035 // 3.5% (ajustable). Incluye comisiones/impuestos estimados.
+  }
+</script>
+
+<header class="sticky top-0 z-50 glass border-b border-gray-200">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between py-3">
+      <a href="#" class="flex items-center gap-3">
+        <img src="./assets/lf-logo.svg" alt="LF Digital" class="h-9 w-9 rounded-2xl bg-gray-900 p-1"/>
+        <span class="font-semibold">LF Digital</span>
+      </a>
+      <nav class="hidden sm:flex items-center gap-5 text-sm">
+        <a href="#catalogo" class="hover:underline">Catálogo</a>
+        <a href="#consulta-custom" class="hover:underline">¿No está el producto?</a>
+      </nav>
+      <div class="flex items-center gap-2">
+        <button id="importBtn" class="btn hidden items-center gap-2 rounded-xl bg-gray-900 px-4 py-2 text-white text-sm font-medium">Importar ML</button>
+        <button id="whatsappTop" class="btn inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium">Whatsapp</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-10">
+  <div class="grid grid-cols-1 md:grid-cols-[160px,1fr] gap-6 items-center">
+    <img src="./assets/lf-profile.png" alt="Perfil LF Digital" class="h-40 w-40 rounded-2xl shadow-soft border bg-white"/>
+    <div>
+      <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight">LF Digital</h1>
+      <p class="text-sm text-gray-600 mt-1">Pagá con <b>Mercado Pago</b> o <b>Transferencia</b>. Con tarjeta se aplica un recargo del <b id="feePct"></b>. Por transferencia, precio base sin comisión.</p>
+      <div class="mt-3 flex gap-2">
+        <a href="#consulta-custom" class="btn rounded-xl bg-gray-900 px-4 py-2 text-white text-sm">Consultar producto no publicado</a>
+        <a href="#catalogo" class="btn rounded-xl border px-4 py-2 text-sm">Ver catálogo</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+  <section id="catalogo" class="mt-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-xl sm:text-2xl font-semibold tracking-tight">Catálogo</h2>
+      <p class="text-sm text-gray-600 mt-1">Mostramos <b>dos precios</b>: <b>Transferencia</b> (base) y <b>Tarjeta</b> (con recargo).</p>
+    </div>
+    <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+      <input id="searchInput" type="search" placeholder="Buscar producto..." class="w-full sm:w-64 rounded-xl border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10" />
+      <select id="sortSelect" class="rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10">
+        <option value="relevance">Ordenar: Relevancia</option>
+        <option value="price_asc">Precio ↑</option>
+        <option value="price_desc">Precio ↓</option>
+      </select>
+    </div>
+  </section>
+
+  <div id="loading" class="mt-6 hidden">
+    <div class="rounded-xl border bg-white p-4 shadow-soft text-sm text-gray-600">
+      Cargando productos desde Mercado Libre…
+    </div>
+  </div>
+
+  <section class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" id="grid"></section>
+
+  <section id="consulta-custom" class="mt-12 mb-10">
+    <div class="rounded-2xl border bg-white p-5 shadow-soft">
+      <h3 class="text-lg font-semibold">¿No encontraste el producto?</h3>
+      <p class="text-sm text-gray-600 mt-1">Contanos qué estás buscando y te confirmamos precio y tiempo de entrega. También podés pedirlo <b>a pedido</b> con seña.</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+        <input id="c_nombre" class="rounded-xl border px-3 py-2 text-sm" placeholder="Tu nombre" />
+        <input id="c_telefono" class="rounded-xl border px-3 py-2 text-sm" placeholder="Tu WhatsApp" />
+        <input id="c_producto" class="rounded-xl border px-3 py-2 text-sm sm:col-span-2" placeholder="Producto y modelo (ej. Motorola Edge 50 Fusion 256GB)" />
+        <div class="grid grid-cols-2 gap-3 sm:col-span-2">
+          <input id="c_presupuesto" class="rounded-xl border px-3 py-2 text-sm" placeholder="Presupuesto aprox. (opcional)" />
+          <input id="c_plazo" class="rounded-xl border px-3 py-2 text-sm" placeholder="¿Para cuándo lo necesitás?" />
+        </div>
+      </div>
+      <div class="mt-4 flex gap-2">
+        <button class="btn rounded-xl bg-gray-900 px-4 py-2 text-white text-sm" onclick="enviarConsultaCustom()">Enviar consulta por WhatsApp</button>
+        <button class="btn rounded-xl border px-4 py-2 text-sm" onclick="limpiarConsultaCustom()">Limpiar</button>
+      </div>
+      <p class="text-xs text-gray-500 mt-3">Tip: si tenés un link/reference de otra tienda, pegalo en el campo del producto.</p>
+    </div>
+  </section>
+
+  <section class="my-10 text-center text-xs text-gray-500">
+    <p>© <span id="year"></span> LF Digital — Hecho con ♥</p>
+  </section>
+</main>
+
+<div id="modal" class="fixed inset-0 hidden items-center justify-center bg-black/30 p-4">
+  <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-soft">
+    <div class="flex items-start justify-between mb-3">
+      <h3 id="modalTitle" class="text-lg font-semibold">Consulta de stock</h3>
+      <button class="text-gray-400 hover:text-gray-600" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modalBody" class="text-sm text-gray-700 space-y-3"></div>
+  </div>
+</div>
+
+<script>
+  const grid = document.getElementById('grid')
+  const searchInput = document.getElementById('searchInput')
+  const sortSelect = document.getElementById('sortSelect')
+  const importBtn = document.getElementById('importBtn')
+  const whatsappTop = document.getElementById('whatsappTop')
+  const loading = document.getElementById('loading')
+  document.getElementById('year').textContent = new Date().getFullYear()
+  document.getElementById('feePct').textContent = Math.round(CONFIG.CARD_FEE_PERCENT*1000)/10 + '%'
+
+  let PRODUCTS = []
+  let RAW_ML_RESULTS = []
+
+  function money(n){
+    try{ return n.toLocaleString('es-AR', {style:'currency', currency:'ARS'}) }catch{ return `$${n}` }
+  }
+  function openModal(title, html){
+    document.getElementById('modalTitle').textContent = title
+    const body = document.getElementById('modalBody')
+    body.innerHTML = ''
+    body.insertAdjacentHTML('beforeend', html)
+    document.getElementById('modal').classList.remove('hidden')
+    document.getElementById('modal').classList.add('flex')
+  }
+  function closeModal(){
+    document.getElementById('modal').classList.add('hidden')
+    document.getElementById('modal').classList.remove('flex')
+  }
+  function toWA(message){
+    const url = `https://wa.me/${CONFIG.WHATSAPP_NUMBER.replace(/\\D/g,'')}?text=${encodeURIComponent(message)}`
+    window.open(url, '_blank')
+  }
+
+  function cardPrice(base){
+    return Math.round(base * (1 + CONFIG.CARD_FEE_PERCENT) * 100) / 100
+  }
+
+  function render(){
+    const q = (searchInput.value||'').trim().toLowerCase()
+    let items = [...PRODUCTS]
+    if(q) items = items.filter(p=> (p.title+p.brand).toLowerCase().includes(q))
+    const sort = sortSelect.value
+    if(sort==='price_asc') items.sort((a,b)=>a.price-b.price)
+    if(sort==='price_desc') items.sort((a,b)=>b.price-a.price)
+
+    grid.innerHTML = ''
+    if(!items.length){
+      grid.innerHTML = `<div class="col-span-full text-center text-sm text-gray-500 border rounded-xl py-10">No se encontraron productos.</div>`
+      return
+    }
+
+    items.forEach(p=>{
+      const badge = p.in_stock ? `<span class="ml-2 inline-flex items-center rounded-full bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 text-[11px]">En stock</span>` : `<span class="ml-2 inline-flex items-center rounded-full bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 text-[11px]">A pedido</span>`
+      const priceCard = cardPrice(p.price)
+      const ahorro = p.price ? Math.max(0, priceCard - p.price) : 0
+      const html = `
+        <article class="card group rounded-2xl border bg-white p-4 shadow-soft transition">
+          <div class="aspect-square w-full overflow-hidden rounded-xl bg-gray-100">
+            <img src="${p.thumbnail}" alt="${p.title}" class="h-full w-full object-cover group-hover:scale-[1.02] transition"/>
+          </div>
+          <h3 class="mt-3 text-sm font-semibold leading-snug">${p.title}${badge}</h3>
+          <p class="mt-1 text-xs text-gray-500">${p.brand||''}</p>
+          <div class="mt-3">
+            <div class="text-[13px] text-gray-500">Transferencia (sin comisión): <b class="text-gray-900">${money(p.price)}</b></div>
+            <div class="text-[13px] text-gray-500">Tarjeta (con recargo ${Math.round(CONFIG.CARD_FEE_PERCENT*1000)/10}%): <b class="text-gray-900">${money(priceCard)}</b></div>
+            ${ahorro>0 ? `<div class="text-[11px] text-green-700 mt-1">Ahorro pagando por transferencia: ${money(ahorro)}</div>`:''}
+          </div>
+          <div class="mt-3 flex items-center justify-between">
+            <div>
+              ${p.list_price && p.list_price>p.price ? `<div class="text-xs text-gray-400 line-through">Lista ${money(p.list_price)}</div>`:''}
+            </div>
+            <div class="flex gap-2">
+              <button class="btn rounded-lg bg-gray-900 px-3 py-2 text-xs text-white" onclick='comprarMP(${JSON.stringify(p).replace("'","&#39;")})'>Pagar con Mercado Pago</button>
+              <button class="btn rounded-lg border px-3 py-2 text-xs" onclick='comprarWA(${JSON.stringify(p).replace("'","&#39;")})'>Transferencia / WhatsApp</button>
+            </div>
+          </div>
+          ${!p.in_stock ? `<button class="mt-3 w-full btn rounded-lg bg-gray-100 px-3 py-2 text-xs" onclick='senar(${JSON.stringify(p).replace("'","&#39;")})'>Señar 20%</button>`:''}
+        </article>`
+      grid.insertAdjacentHTML('beforeend', html)
+    })
+  }
+
+  async function comprarMP(p){
+    const monto = cardPrice(p.price) // aplicar recargo en el checkout
+    try{
+      const r = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ title: p.title, price: monto, quantity: 1 })
+      });
+      const data = await r.json();
+      if (data && data.init_point) {
+        window.location.href = data.init_point;
+      } else {
+        alert('No se pudo iniciar el pago con Mercado Pago.');
+      }
+    }catch(e){
+      console.error(e);
+      alert('Error al iniciar el pago con Mercado Pago.');
+    }
+  }
+
+  function comprarWA(p){
+    const msg = `Hola! Quiero comprar *${p.title}* por TRANSFERENCIA (sin comisión) a ${money(p.price)}. ¿Me pasás los datos?`;
+    toWA(msg)
+  }
+  function consultarStock(p){
+    const form = `
+      <div class="space-y-3">
+        <p>Escribinos y te confirmamos disponibilidad al instante.</p>
+        <div class="grid grid-cols-2 gap-2">
+          <input id="nombre" class="rounded-xl border px-3 py-2 text-sm" placeholder="Tu nombre"/>
+          <input id="telefono" class="rounded-xl border px-3 py-2 text-sm" placeholder="Tu WhatsApp"/>
+        </div>
+        <button class="btn w-full rounded-xl bg-gray-900 px-4 py-2 text-white text-sm" onclick='enviarConsulta(${JSON.stringify(p).replace("'","&#39;")})'>Enviar por WhatsApp</button>
+      </div>`
+    openModal('Consulta de stock', form)
+  }
+  function enviarConsulta(p){
+    const nombre = document.getElementById('nombre').value||''
+    const tel = document.getElementById('telefono').value||''
+    const msg = `Hola! Soy ${nombre||'cliente'} (${tel}). Consulto por *${p.title}* a ${money(p.price)}. ¿Hay stock?`;
+    toWA(msg)
+  }
+  function senar(p){
+    const dep = Math.round(p.price*0.20)
+    const html = `
+      <div class="space-y-3">
+        <p>Podés reservar este producto con una seña del <strong>20%</strong> (${money(dep)}). Si no conseguimos el producto en el plazo acordado, te devolvemos el 100%.</p>
+        <div class="rounded-xl bg-gray-50 p-3 text-xs text-gray-700 border">${CONFIG.BANK_DETAILS || 'Datos bancarios a confirmar'}</div>
+        <button class="btn w-full rounded-xl border px-4 py-2 text-sm" onclick='enviarSeniaWA(${JSON.stringify(p).replace("'","&#39;")}, ${dep})'>Enviar comprobante por WhatsApp</button>
+      </div>`
+    openModal('Seña — Reserva 20%', html)
+  }
+  function enviarSeniaWA(p, dep){
+    const msg = `Hola! Te envío comprobante de *seña* por ${money(dep)} para reservar *${p.title}*.`;
+    toWA(msg)
+  }
+
+  function enviarConsultaCustom(){
+    const nombre = document.getElementById('c_nombre').value || 'cliente';
+    const tel = document.getElementById('c_telefono').value || '';
+    const prod = document.getElementById('c_producto').value || '';
+    const presupuesto = document.getElementById('c_presupuesto').value || '';
+    const plazo = document.getElementById('c_plazo').value || '';
+    const msg = `Hola! Soy ${nombre} (${tel}). Busco un producto NO publicado: ${prod}. Presupuesto: ${presupuesto}. Plazo: ${plazo}. ¿Me pasás disponibilidad y precio a pedido?`;
+    toWA(msg);
+  }
+  function limpiarConsultaCustom(){
+    ['c_nombre','c_telefono','c_producto','c_presupuesto','c_plazo'].forEach(id=>{
+      const el = document.getElementById(id); if(el) el.value='';
+    });
+  }
+
+  async function fetchJSONDirect(url){
+    const r = await fetch(url)
+    if(!r.ok) throw new Error('HTTP '+r.status)
+    return await r.json()
+  }
+  async function fetchJSON(url){
+    try{
+      return await fetchJSONDirect(url)
+    }catch(e){
+      if(CONFIG.USE_PROXY){
+        const prox = '/api/ml-proxy?url=' + encodeURIComponent(url)
+        const r = await fetch(prox)
+        if(!r.ok) throw new Error('Proxy HTTP '+r.status)
+        return await r.json()
+      }else{
+        throw e
+      }
+    }
+  }
+
+  async function importFromML(){
+    try{
+      loading.classList.remove('hidden')
+      const sellerId = CONFIG.ML_SELLER_ID
+      if(!sellerId) return
+      const searchUrl = `https://api.mercadolibre.com/sites/MLA/search?seller_id=${sellerId}&limit=50`
+      const data = await fetchJSON(searchUrl)
+      RAW_ML_RESULTS = data.results||[]
+
+      const items = []
+      for(const r of RAW_ML_RESULTS){
+        const base = {
+          id: r.id,
+          title: r.title,
+          price: r.price,
+          list_price: r.original_price||null,
+          brand: r.attributes?.find(a=>a.id==='BRAND')?.value_name||'',
+          thumbnail: (r.thumbnail_id ? `https://http2.mlstatic.com/D_${r.thumbnail_id}-O.jpg` : r.thumbnail) || 'https://via.placeholder.com/600x600?text=LF+Digital',
+          permalink: r.permalink
+        }
+        try{
+          const detail = await fetchJSON(`https://api.mercadolibre.com/items/${r.id}`)
+          base.in_stock = (detail.available_quantity||0) > 0
+        }catch{ base.in_stock = true }
+        items.push(base)
+      }
+      const ids = new Set(PRODUCTS.map(p=>p.id))
+      for(const it of items){ if(!ids.has(it.id)) PRODUCTS.push(it) }
+      render()
+    }catch(e){
+      console.error(e)
+      alert('No se pudo importar automáticamente. Si continua, el proxy /api/ml-proxy ya está listo.')
+    }finally{
+      loading.classList.add('hidden')
+    }
+  }
+
+  async function loadExtraMlItems(){
+    if(!CONFIG.EXTRA_ML_ITEMS || !CONFIG.EXTRA_ML_ITEMS.length) return
+    for(const rawId of CONFIG.EXTRA_ML_ITEMS){
+      const id = String(rawId).toUpperCase().replace(/[^A-Z0-9]/g,'')
+      try{
+        const detail = await fetchJSON(`https://api.mercadolibre.com/items/${id}`)
+        const base = {
+          id: detail.id,
+          title: detail.title,
+          price: detail.price,
+          list_price: detail.original_price||null,
+          brand: (detail.attributes||[]).find(a=>a.id==='BRAND')?.value_name||'',
+          thumbnail: (detail.pictures && detail.pictures[0]?.secure_url) || detail.thumbnail || 'https://via.placeholder.com/600x600?text=LF+Digital',
+          permalink: detail.permalink,
+          in_stock: (detail.available_quantity||0) > 0
+        }
+        if(!PRODUCTS.find(p=>p.id===base.id)) PRODUCTS.push(base)
+      }catch(e){ console.warn('No pude cargar item extra', id, e) }
+    }
+  }
+
+  searchInput.addEventListener('input', render)
+  sortSelect.addEventListener('change', render)
+  importBtn.addEventListener('click', importFromML)
+  whatsappTop.addEventListener('click', ()=> toWA('Hola! Quiero comprar un producto de la tienda.'))
+
+  async function init(){
+    PRODUCTS = []
+    loading.classList.remove('hidden')
+    await loadExtraMlItems()
+    await importFromML()
+    loading.classList.add('hidden')
+    render()
+  }
+  init()
+</script>
+
+</body>
+</html>
